@@ -95,8 +95,7 @@ PROMPT_TEMPLATES = {
         "\n\n\n",
     ),
     "deepseek-math": (
-        "User: {input}\nPlease reason step by step, "
-        "and put your final answer within \\boxed{{}}.\n\nAssistant:",
+        "User: {input}\nPlease reason step by step, " "and put your final answer within \\boxed{{}}.\n\nAssistant:",
         "{output}",
         "\n\n\n",
     ),
@@ -144,6 +143,9 @@ PROMPT_TEMPLATES = {
         "<|im_start|>assistant\n",
         "{output}",
         "\n\n",
+    ),
+    "skythought": (
+        "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step.",
     ),
     "mathstral": (
         "{input}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
@@ -194,16 +196,9 @@ def construct_prompt(example, data_name, args):
         # Hotfix to support putting all demos into a single turn
         demo_prompt = splitter.join([q + "\n" + a for q, a in demos])
     else:
-        demo_prompt = splitter.join(
-            [
-                input_template.format(input=q) + output_template.format(output=a)
-                for q, a in demos
-            ]
-        )
+        demo_prompt = splitter.join([input_template.format(input=q) + output_template.format(output=a) for q, a in demos])
     context = input_template.format(input=example["question"])
-    if len(demo_prompt) == 0 or (
-        args.adapt_few_shot and example["gt_ans"] not in ["A", "B", "C", "D", "E"]
-    ):
+    if len(demo_prompt) == 0 or (args.adapt_few_shot and example["gt_ans"] not in ["A", "B", "C", "D", "E"]):
         full_prompt = context
     else:
         if args.prompt_type == "qwen25-math-cot":

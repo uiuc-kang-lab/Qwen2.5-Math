@@ -52,9 +52,7 @@ def parse_args():
         help="Few shot for multiple-choice questions, zero shot for others.",
     )
     args = parser.parse_args()
-    args.top_p = (
-        1 if args.temperature == 0 else args.top_p
-    )  # top_p must be 1 when using greedy sampling (vllm)
+    args.top_p = 1 if args.temperature == 0 else args.top_p  # top_p must be 1 when using greedy sampling (vllm)
     return args
 
 
@@ -88,14 +86,10 @@ def prepare_data(data_name, args):
     processed_samples = []
     if not args.overwrite:
         processed_files = [
-            f
-            for f in os.listdir(f"{output_dir}/{data_name}/")
-            if f.endswith(".jsonl") and f.startswith(out_file_prefix)
+            f for f in os.listdir(f"{output_dir}/{data_name}/") if f.endswith(".jsonl") and f.startswith(out_file_prefix)
         ]
         for f in processed_files:
-            processed_samples.extend(
-                list(load_jsonl(f"{output_dir}/{data_name}/{f}"))
-            )
+            processed_samples.extend(list(load_jsonl(f"{output_dir}/{data_name}/{f}")))
 
     # dedepulicate
     processed_samples = {sample["idx"]: sample for sample in processed_samples}
@@ -117,9 +111,7 @@ def setup(args):
         )
         tokenizer = None
         if args.apply_chat_template:
-            tokenizer = AutoTokenizer.from_pretrained(
-                args.model_name_or_path, trust_remote_code=True
-            )
+            tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)
     else:
         llm, tokenizer = load_hf_lm_and_tokenizer(
             model_name_or_path=args.model_name_or_path,
@@ -213,9 +205,7 @@ def main(llm, tokenizer, data_name, args):
         samples.append(sample)
 
     # repeat n times
-    input_prompts = [
-        sample["prompt"] for sample in samples for _ in range(args.n_sampling)
-    ]
+    input_prompts = [sample["prompt"] for sample in samples for _ in range(args.n_sampling)]
     if args.apply_chat_template:
         input_prompts = [
             tokenizer.apply_chat_template(
@@ -266,17 +256,11 @@ def main(llm, tokenizer, data_name, args):
                     max_tokens=args.max_tokens_per_call,
                     n=1,
                     stop=stop_words,
-                    stop_token_ids=(
-                        [151645, 151643]
-                        if "qwen2" in args.model_name_or_path.lower()
-                        else None
-                    ),
+                    stop_token_ids=([151645, 151643] if "qwen2" in args.model_name_or_path.lower() else None),
                 ),
             )
 
-            outputs = sorted(
-                outputs, key=lambda x: int(x.request_id)
-            )  # sort outputs by request_id
+            outputs = sorted(outputs, key=lambda x: int(x.request_id))  # sort outputs by request_id
             outputs = [output.outputs[0].text for output in outputs]
         else:
             outputs = generate_completions(
@@ -343,9 +327,7 @@ def main(llm, tokenizer, data_name, args):
         codes.append(code)
 
     # extract preds
-    results = [
-        run_execute(executor, code, args.prompt_type, data_name) for code in codes
-    ]
+    results = [run_execute(executor, code, args.prompt_type, data_name) for code in codes]
     time_use = time.time() - start_time
 
     # put results back to examples
@@ -366,9 +348,7 @@ def main(llm, tokenizer, data_name, args):
                 preds[j] = choice_answer_clean(code[j])
             elif is_multi_choice(sample["gt"]) and not is_multi_choice(preds[j]):
                 # remove any non-choice char
-                preds[j] = "".join(
-                    [c for c in preds[j] if c in ["A", "B", "C", "D", "E"]]
-                )
+                preds[j] = "".join([c for c in preds[j] if c in ["A", "B", "C", "D", "E"]])
 
         sample.pop("prompt")
         sample.update({"code": code, "pred": preds, "report": reports})
@@ -388,13 +368,9 @@ def main(llm, tokenizer, data_name, args):
         save_jsonl(all_samples, out_file)
 
     result_json["time_use_in_second"] = time_use
-    result_json["time_use_in_minite"] = (
-        f"{int(time_use // 60)}:{int(time_use % 60):02d}"
-    )
+    result_json["time_use_in_minite"] = f"{int(time_use // 60)}:{int(time_use % 60):02d}"
 
-    with open(
-        out_file.replace(".jsonl", f"_{args.prompt_type}_metrics.json"), "w"
-    ) as f:
+    with open(out_file.replace(".jsonl", f"_{args.prompt_type}_metrics.json"), "w") as f:
         json.dump(result_json, f, indent=4)
     return result_json
 
