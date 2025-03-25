@@ -145,7 +145,9 @@ PROMPT_TEMPLATES = {
         "\n\n",
     ),
     "skythought": (
-        "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step.",
+        "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step. {input}",
+        "{output}",
+        "\n\n",
     ),
     "mathstral": (
         "{input}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
